@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <title>Chat Room</title>
+</head>
+<body>
+
+    <nav class="navbar bg-body-tertiary">
+        <div class="container-fluid">
+            <a href="{% url 'signout' %}" target="blank">
+                <button class="ml-10">SignOut</button>
+            </a>
+            
+            <button id="view-members-button" class="btn btn-primary float-right mr-2">View Members</button>
+            <div id="members-dialog" title="Group Members" style="display: none;">
+                <ul id="members-list">
+            
+                </ul>
+            </div>
+        </div>
+      </nav>
+    <div class="container mt-4">
+        <strong id="group-name">{{group.name}}</strong>
+        <div id="chat" class="m-5">
+            <div id="chat-messages">
+                {% for m in messages %}
+                    {{ m.user.username }}: {{ m.content }}
+                    <br>
+                        
+                {% endfor %}
+            </div>
+            <input id="chat-message-input" type="text" class="form-control" placeholder="Type your message..." size="40">
+            <button id="chat-message-submit" class="btn btn-primary m-5">Send</button>
+        </div>
+    </div>
+
+
+    <script>
+      
+      const chatSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/group/{{group.id}}/'
+);
+
+chatSocket.onmessage = function (e) {
+    const data = JSON.parse(e.data);
+    console.log(data);
+    document.querySelector('#chat-messages').innerHTML += data.message + '<br>';
+};
+
+document.querySelector('#chat-message-input').focus();
+document.querySelector('#chat-message-input').addEventListener('keyup', function (e) {
+    if (e.keyCode === 13) {
+        document.querySelector('#chat-message-submit').click();
+    }
+});
+
+document.querySelector('#chat-message-submit').addEventListener('click', function () {
+    const messageInputDom = document.querySelector('#chat-message-input');
+    const message = messageInputDom.value;
+    chatSocket.send(JSON.stringify({
+        'message': message
+    }));
+    messageInputDom.value = '';
+});
+
+$(document).on("click", "#view-members-button", function() {
+            $.ajax({
+        url: "{% url 'group:viewmembers'  %}",  
+        type: "GET",
+        data: {
+            group_id: '{{group.id}}' 
+        },
+        success: function(data) {
+            var membersList = data.members;
+            var memberTableHTML =
+                '<table>' +
+                '<thead>' +
+                '<tr><th>Delete</th><th>User</th></tr>' +
+                '</thead>' +
+                '<tbody>';
+
+            for (var i = 0; i < membersList.length; i++) {
+                memberTableHTML +=
+                    '<tr>' +
+                    '<td><input type="checkbox" class="delete-member-checkbox" data-member="' + membersList[i] + '"></td>' +
+                    '<td>' + membersList[i] + '</td>' +
+                    '</tr>';
+            }
+
+            memberTableHTML += '</tbody></table>';
+            memberTableHTML += '<button id="delete-selected-members">Delete Selected</button>'; 
+
+            $("#members-dialog").html(memberTableHTML);
+  
+            $("#members-dialog").html(memberListHTML);
+    
+        }
+    });
+        $("#members-dialog").dialog("open");
+    });
+
+    $(document).ready(function() {
+        $("#members-dialog").dialog({
+            autoOpen: false,
+            width: 400,
+            modal: true,
+            buttons: {
+                "Close": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+    });
+    var selectedMembers = [];  
+
+$(document).on("click", ".delete-member-checkbox", function() {
+    var isChecked = $(this).prop("checked");
+    var member = $(this).data("member");
+    
+    if (isChecked) {
+        selectedMembers.push(member);
+    } else {
+        var index = selectedMembers.indexOf(member);
+        if (index !== -1) {
+            selectedMembers.splice(index, 1);
+        }
+    }
+});
+
+$(document).on("click", "#delete-selected-members", function() {
+    console.log("i am in html")
+
+    $.ajax({
+        headers:{
+            "X-CSRFToken": "{{ csrf_token }}",
+        },
+        url: "{% url 'group:delete_selected_members' %}",  
+        type: "POST",
+        data: {
+            selected_members: selectedMembers,
+            group_id: '{{group.id}}'  
+        },
+        success: function(data) {
+            if (data.redirect === "userhome") {
+            window.location.href = "{% url 'userhome' %}";
+        }
+            fetchAndUpdateMembersList();
+         },
+        error: function(error) {
+            // Handle error
+        }
+    });
+});
+
+function fetchAndUpdateMembersList() {
+    $.ajax({
+        url: "{% url 'group:viewmembers' %}", 
+        type: "GET",
+        data: {
+            group_id: '{{group.id}}' 
+        },
+        success: function(data) {
+            var membersList = data.members;
+            var memberTableHTML =
+                '<table>' +
+                '<thead>' +
+                '<tr><th>Delete</th><th>User</th></tr>' +
+                '</thead>' +
+                '<tbody>';
+
+            for (var i = 0; i < membersList.length; i++) {
+                memberTableHTML +=
+                    '<tr>' +
+                    '<td><input type="checkbox" class="delete-member-checkbox" data-member="' + membersList[i] + '"></td>' +
+                    '<td>' + membersList[i] + '</td>' +
+                    '</tr>';
+            }
+
+            memberTableHTML += '</tbody></table>';
+            memberTableHTML += '<button id="delete-selected-members">Delete Selected</button>';
+
+            $("#members-dialog").html(memberTableHTML);
+        }
+    });
+}
+
+
+
+    </script>
+
+
+</body>
+</html>
+
+
