@@ -41,7 +41,7 @@ def viewgroup(request,id):
     group=Group.objects.get(id=id)
     groups=request.user.group_set.all()
     print(groups)
-    if not groups :
+    if group not in groups :
         raise PermissionDenied("You're not authorised")
     messages=Message.objects.filter(group=group)
     return render(request,'groupchat.html',{'group':group,'messages':messages,'user':request.user})
