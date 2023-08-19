@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Add jQuery and jQuery UI -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <!-- Add Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <!-- User List as Card List -->
+    <div class="container mt-5">
+        <div class="card-columns">
+            {% for user in users %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"  data-user-id="{{ user.id }}">{{ user.username }}</h5>
+                    <button class="btn btn-primary edit-user-button" data-user-id="{{ user.id }}" data-username="{{ user.username }}">Edit</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="user-edit-dialog" title="Edit User" style="display: none;">
+        <form id="user-edit-form">
+            {% csrf_token %}
+            <input type="hidden" id="user-id" name="user_id">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" class="form-control">
+            </div>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $(document).on("click", ".edit-user-button", function() {
+                var userId = $(this).data("user-id");
+                var username = $(this).data("username");
+
+                $("#user-id").val(userId);
+                $("#username").val(username);
+
+                $("#user-edit-dialog").dialog("open");
+            });
+
+            $("#user-edit-dialog").dialog({
+                autoOpen: false,
+                width: 400,
+                modal: true,
+                buttons: {
+                    "Edit": function() {
+                        var formData = $("#user-edit-form").serialize();
+                        $.ajax({
+                            url: "{% url 'edituser' %}",
+                            type: "POST",
+                            data: formData,
+                            success: function(data) {
+                                var editedUsername = data.edited_username;
+                                var userId = $("#user-id").val();
+                                $("h5[data-user-id='" + userId + "']").text(editedUsername);
+                                alert("User " + editedUsername + " edited successfully");
+
+                                $("#user-edit-dialog").dialog("close");
+                            }
+                        });
+                    },
+                    "Cancel": function() {
+                        $(this).dialog("close");
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Edit Group</title>
+        <!-- Add Bootstrap CSS link -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    </head>
+<body>
+    <div class="container mt-5">
+        <h1>Edit Group</h1>
+        
+        <div class="form-group">
+            <label for="group-select">Select Group:</label>
+            <select id="group-select" class="form-control">
+                <option value="" disabled selected>Select a group</option>
+                {% for group in user.owned_groups.all %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    
+    <h2>Group Members:</h2>
+    <div id="group-members">
+
+    </div>
+    
+    <button id="save-changes" class="btn btn-primary">Save Changes</button>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#group-select").change(function() {
+                var groupId = $(this).val();
+                if (groupId) {
+                    $.ajax({
+                        url: "{% url 'group:get_group_members' %}",
+                        data: { group_id: groupId },
+                        success: function(data) {
+                            console.log(data);
+                            $("#group-members").html(data['checkboxes']);
+                        }
+                    });
+                } else {
+                    $("#group-members").empty();
+                }
+            });
+
+            $("#save-changes").click(function() {
+                var groupId = $("#group-select").val();
+                var selectedUsers = [];
+                $(":checkbox:checked").each(function() {
+                    selectedUsers.push($(this).val());
+                });
+
+                $.ajax({
+                    headers:{
+            "X-CSRFToken": "{{ csrf_token }}",
+        },
+                    url: "{% url 'group:update_group_members' %}",
+                    type: "POST",
+                    data: { group_id: groupId, users: selectedUsers },
+                    success: function() {
+                        alert("Changes saved successfully!");
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

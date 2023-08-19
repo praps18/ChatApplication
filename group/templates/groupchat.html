@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <title>Chat Room</title>
 </head>
@@ -30,28 +30,82 @@
         <div id="chat" class="m-5">
             <div id="chat-messages">
                 {% for m in messages %}
-                    {{ m.user.username }}: {{ m.content }}
-                    <br>
-                        
+                <div class="card m-2">
+                    <div class="card-header">
+                        <strong>{{ m.user.username }}</strong>
+                    </div>
+                    <div class="card-body">
+                        {{ m.content }}
+                        <button class="like-button btn btn-link" data-message-id="{{ m.id }}">
+                            
+                             <i class="fas fa-thumbs-up"></i>
+                        </button>
+                        <span id="like-count-{{ m.id }}" class="like-count">{{ m.likes }}</span>
+                    </div>
+                  
+                </div>
                 {% endfor %}
             </div>
+            
+            <br>
             <input id="chat-message-input" type="text" class="form-control" placeholder="Type your message..." size="40">
-            <button id="chat-message-submit" class="btn btn-primary m-5">Send</button>
+            <button id="chat-message-submit" class="btn btn-primary m-2">Send</button>
         </div>
     </div>
 
 
     <script>
+
       
       const chatSocket = new WebSocket(
     'ws://' + window.location.host + '/ws/group/{{group.id}}/'
 );
 
+
 chatSocket.onmessage = function (e) {
     const data = JSON.parse(e.data);
     console.log(data);
-    document.querySelector('#chat-messages').innerHTML += data.message + '<br>';
-};
+         if(data.type === 'like_message'){
+        const messageId = data['messageid'];
+        console.log("Message ID:", messageId); 
+        const likeCountElement = document.querySelector(`#like-count-${messageId}`);
+        if (likeCountElement) {
+            likeCountElement.textContent = data['count'];
+        }         
+    }
+         else{
+            console.log("am in coming here")
+            const messageId = data['messageid'];
+        const messageContent = data['message'];
+        const likeCount = data['count'];
+
+    const username=data['username']
+
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.innerHTML = `
+        <div class="card m-2">
+                    <div class="card-header">
+                        <strong>${username}</strong>
+                    </div>
+                    <div class="card-body">
+                        ${messageContent}
+                        <button class="like-button btn btn-link" data-message-id="${messageId}">
+                            <i class="fas fa-thumbs-up"></i>
+                            </button>
+                        <span id="like-count-${messageId}" class="like-count">${likeCount}</span>
+                    </div>
+                  
+                </div>
+
+
+            
+        `;
+
+        const chatMessagesElement = document.querySelector('#chat-messages');
+        chatMessagesElement.appendChild(messageElement);
+         }
+    };
 
 document.querySelector('#chat-message-input').focus();
 document.querySelector('#chat-message-input').addEventListener('keyup', function (e) {
@@ -64,10 +118,22 @@ document.querySelector('#chat-message-submit').addEventListener('click', functio
     const messageInputDom = document.querySelector('#chat-message-input');
     const message = messageInputDom.value;
     chatSocket.send(JSON.stringify({
+        'type':'chat',
         'message': message
     }));
     messageInputDom.value = '';
 });
+
+document.querySelector('#chat-messages').addEventListener('click', function (e) {
+    if (e.target && e.target.classList.contains('like-button')) {
+        const messageId = e.target.getAttribute('data-message-id');
+        chatSocket.send(JSON.stringify({
+            'type': 'like_message',
+            'message_id': messageId,
+        }));
+    }
+});
+
 
 $(document).on("click", "#view-members-button", function() {
             $.ajax({
@@ -81,20 +147,30 @@ $(document).on("click", "#view-members-button", function() {
             var memberTableHTML =
                 '<table>' +
                 '<thead>' +
+                    '{% if group.owner == request.user %}' +
                 '<tr><th>Delete</th><th>User</th></tr>' +
+                '{% endif %}' +
                 '</thead>' +
                 '<tbody>';
 
             for (var i = 0; i < membersList.length; i++) {
                 memberTableHTML +=
-                    '<tr>' +
-                    '<td><input type="checkbox" class="delete-member-checkbox" data-member="' + membersList[i] + '"></td>' +
+                '<tr>' +
+                    '<td>' +
+                
+                    '{% if group.owner == request.user %}' +
+                    '<input type="checkbox" class="delete-member-checkbox" data-member="' + membersList[i] + '">' +
+                    '{% endif %}' +
+                    '</td>' +
                     '<td>' + membersList[i] + '</td>' +
                     '</tr>';
             }
 
             memberTableHTML += '</tbody></table>';
+
+            '{% if group.owner == request.user %}' 
             memberTableHTML += '<button id="delete-selected-members">Delete Selected</button>'; 
+            '{% endif %}' 
 
             $("#members-dialog").html(memberTableHTML);
   
@@ -153,7 +229,7 @@ $(document).on("click", "#delete-selected-members", function() {
             fetchAndUpdateMembersList();
          },
         error: function(error) {
-            // Handle error
+           
         }
     });
 });
@@ -176,15 +252,20 @@ function fetchAndUpdateMembersList() {
 
             for (var i = 0; i < membersList.length; i++) {
                 memberTableHTML +=
-                    '<tr>' +
-                    '<td><input type="checkbox" class="delete-member-checkbox" data-member="' + membersList[i] + '"></td>' +
+                '<tr>' +
+                    '<td>' +
+                    '{% if group.owner == request.user %}' +
+                    '<input type="checkbox" class="delete-member-checkbox" data-member="' + membersList[i] + '">' +
+                    '{% endif %}' +
+                    '</td>' +
                     '<td>' + membersList[i] + '</td>' +
                     '</tr>';
             }
-
+          
             memberTableHTML += '</tbody></table>';
-            memberTableHTML += '<button id="delete-selected-members">Delete Selected</button>';
-
+            '{% if group.owner == request.user %}' 
+            memberTableHTML += '<button id="delete-selected-members">Delete Selected</button>'; 
+            '{% endif %}' 
             $("#members-dialog").html(memberTableHTML);
         }
     });

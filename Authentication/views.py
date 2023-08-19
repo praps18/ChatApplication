@@ -1,13 +1,19 @@
-from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from group.models import Group
+from group.models import CustomUser, Group
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
+
+
+User = get_user_model()
 
 
 
-# Create your views here.
+
 def home(request):
     return render(request,"index.html")
 
@@ -37,7 +43,50 @@ def signout(request):
 
 @login_required(login_url="/signin")
 def getUserHomePage(request):
-    user=User.objects.get(id=request.user.id)
+    user=CustomUser.objects.get(id=request.user.id)
     groups=user.group_set.all()
     name=request.user.username
     return render(request,'groups.html',{'fname':name,'usergroups':groups})
+
+
+
+def is_admin(user):
+    return user.role =='admin'
+
+
+@login_required(login_url="/signin")
+def create_user(request):
+    if not is_admin(request.user):
+        raise  PermissionDenied("You're not authorised")
+    if request.method=='GET':
+        return render(request,'createuser.html')
+    username = request.POST['username']
+    password = request.POST['password']
+    if username and password:
+       user = User.objects.create_user(username=username, password=password)
+       print("user saved")
+    return redirect('createuser')   
+
+
+
+
+
+@login_required(login_url="/signin")
+def edit_user(request):
+    if not is_admin(request.user):
+        raise  PermissionDenied("You're not authorised")
+    if request.method=='GET':
+        users=CustomUser.objects.all()
+        return render(request,'edituser.html',{'users':users})
+    user_id = request.POST.get("user_id")
+    username = request.POST.get("username")
+    email = request.POST.get("email")
+    user = get_object_or_404(CustomUser, id=user_id)
+    user.username = username
+    user.save()
+    edited_user = CustomUser.objects.get(id=user_id)  # Replace with your code
+    response_data = {
+        'message': 'User edited successfully',
+        'edited_username': edited_user.username,
+    }
+    return JsonResponse(response_data)   
