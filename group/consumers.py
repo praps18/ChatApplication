@@ -3,8 +3,9 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
+from django.shortcuts import get_object_or_404
 
-from .models import CustomUser, Message, Group
+from .models import CustomUser, Like, Message, Group
 from django.contrib.auth.models import User
 
 
@@ -30,15 +31,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         type=data.get('type')
         if(type=='like_message'):
-            userid=self.scope['user'].id
+            user=self.scope['user']
             messageid=data['message_id']
-            count=await self.update_like_count(userid,messageid)
+            count=await self.update_like_count(user,messageid)
+            liked_users=await self.get_liked_usernames(messageid)
             await self.channel_layer.group_send(
             self.group_name,
             {
                 'type': 'like_message',
                 'count': count,
                 'messageid': data['message_id'],
+                'liked_user':liked_users
             }
         )
         if type=='chat':
@@ -61,11 +64,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def like_message(self,event):
         count=event['count']
         messageid=event['messageid']
+        liked_users=event['liked_user']
         await self.send(text_data=json.dumps({
 
             'type':'like_message',
             'count':count,
-            'messageid':messageid
+            'messageid':messageid,
+            'liked_users':liked_users
         }))
 
 
@@ -93,9 +98,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return message
 
     @sync_to_async
-    def update_like_count(self,userid, messageid):
-        message_object=Message.objects.get(id=messageid)
-        message_object.likes+=1
-        message_object.save()
-        return message_object.likes
+    def update_like_count(self,user, messageid):
+        message = get_object_or_404(Message, id=messageid)
+        like, created = Like.objects.get_or_create(user=user, message=message)
+        if created:
+            message.likes+=1
+            message.save()
+            return message.likes
+        else:
+            message.likes-=1
+            message.save()
+            like.delete()
+            return message.likes 
+        
+    @sync_to_async
+    def get_liked_usernames(self,message_id):
+        try:
+            message = Message.objects.get(id=message_id)
+            liked_users = Like.objects.filter(message=message).values_list('user__username', flat=True)
+            return list(liked_users)
+        except Message.DoesNotExist:
+            return []
+          
+       
    

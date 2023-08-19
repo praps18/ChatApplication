@@ -4,11 +4,29 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Add Bootstrap CSS link -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <title>Home Page</title>
 </head>
 <body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">ChatApplication</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+              
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signout">Sign Out</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
     <div class="container mt-4">
         <h3 class="text-center" id="welcome-message">Welcome to ChatApplication!</h3>
@@ -16,46 +34,39 @@
         {% if user.is_authenticated %}
         <div class="text-center">
             <h3>Hello {{ fname }}!</h3>
-            <a href="/signout" class="btn btn-danger">Sign Out</a>
         </div>
         <br>
         {% endif %}
 
-        <ul class="list-group">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for group in usergroups %}
-            <li class="list-group-item">
-                <a href="{% url 'group:groupview' group.id %}" target="blank" id="vg">{{ group.name }}</a>
-            </li>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ group.name }}</h5>
+                        <a href="{% url 'group:groupview' group.id %}" class="btn btn-primary">View Group</a>
+                    </div>
+                </div>
+            </div>
             {% endfor %}
-        </ul>
+        </div>
 
         <div class="text-center mt-3">
-            <button id="ba">
-            <a href="{% url 'group:creategroup' %}" target="blank"  id="create_group">Create Group</a>
-            </button>
-
-
-            <button id="ea">
-                <a href="{% url 'group:edit_group' %}" target="blank"  id="edit_group">Edit Groups</a>
-                </button>
+            <a href="{% url 'group:creategroup' %}" class="btn btn-success" target="_blank">Create Group</a>
+            <a href="{% url 'group:edit_group' %}" class="btn btn-warning" target="_blank">Edit Groups</a>
         </div>
     </div>
 
     {% if user.role == 'admin' %}
-
-    <button>
-   <a href="{% url 'createuser' %}" target="blank">Create User</a> 
-
-    </button>
-    <button>
-        <a href="{% url 'edituser' %}" target="blank">edit User</a> 
-     
-         </button>
-
+    <div class="container text-center mt-3">
+        <a href="{% url 'createuser' %}" class="btn btn-info" target="_blank">Create User</a>
+        <a href="{% url 'edituser' %}" class="btn btn-info" target="_blank">Edit User</a>
+    </div>
     {% endif %}
 
+    <footer class="bg-light text-center p-3 mt-5 fixed-bottom">
+        <p>&copy; 2023 ChatApplication. All Rights Reserved.</p>
+    </footer>
 
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

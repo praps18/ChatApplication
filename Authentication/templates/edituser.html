@@ -7,6 +7,30 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
+
+    
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">ChatApplication</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+              
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/userhome">Home</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signout">Sign Out</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
     <div class="container mt-5">
         <div class="card-columns">
             {% for user in users %}
@@ -71,5 +95,10 @@
             });
         });
     </script>
+    
+    <footer class="bg-light text-center p-3 mt-5 fixed-bottom">
+        <p>&copy; 2023 ChatApplication. All Rights Reserved.</p>
+    </footer>
+
 </body>
 </html>

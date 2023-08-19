@@ -41,6 +41,13 @@
                              <i class="fas fa-thumbs-up"></i>
                         </button>
                         <span id="like-count-{{ m.id }}" class="like-count">{{ m.likes }}</span>
+
+                        <div class="liked-y" >
+                                Liked by:
+                                {% for liked_user in m.like_set.all %}
+                                    <span class="liked-user"  id="liked-by-{{ m.id }}">{{ liked_user.user.username }}</span>
+                                {% endfor %}
+                        </div>
                     </div>
                   
                 </div>
@@ -67,18 +74,25 @@ chatSocket.onmessage = function (e) {
     console.log(data);
          if(data.type === 'like_message'){
         const messageId = data['messageid'];
-        console.log("Message ID:", messageId); 
         const likeCountElement = document.querySelector(`#like-count-${messageId}`);
+        console.log(`#like-count-${messageId}`)
+        const likedByElement = document.querySelector(`#liked-by-${messageId}`);
+        console.log( typeof `#liked-by-${messageId}`)
+
         if (likeCountElement) {
             likeCountElement.textContent = data['count'];
-        }         
+
+        }         if (likedByElement) {
+            likedByElement.textContent='';
+            likedByElement.textContent = data['liked_users'].join(', ');
+        }
+        
     }
          else{
-            console.log("am in coming here")
             const messageId = data['messageid'];
         const messageContent = data['message'];
         const likeCount = data['count'];
-
+        console.log("in the chat" +typeof(messageId))
     const username=data['username']
 
         const messageElement = document.createElement('div');
@@ -91,15 +105,18 @@ chatSocket.onmessage = function (e) {
                     <div class="card-body">
                         ${messageContent}
                         <button class="like-button btn btn-link" data-message-id="${messageId}">
-                            <i class="fas fa-thumbs-up"></i>
+                            <i class="fas fa-thumbs-up" ></i>
                             </button>
                         <span id="like-count-${messageId}" class="like-count">${likeCount}</span>
-                    </div>
-                  
+                    <div class="liked-y">
+                                Liked by:
+                                {% for liked_user in m.like_set.all %}
+                                <span class="liked-user"  id="liked-by-${messageId}">{{ liked_user.user.username }}</span>
+                                {% endfor %}
+                        </div>
                 </div>
-
-
-            
+                </div>
+                
         `;
 
         const chatMessagesElement = document.querySelector('#chat-messages');
@@ -274,6 +291,12 @@ function fetchAndUpdateMembersList() {
 
 
     </script>
+
+    
+<footer class="bg-light text-center p-3 mt-5 fixed-bottom">
+    <p>&copy; 2023 ChatApplication. All Rights Reserved.</p>
+</footer>
+
 
 
 </body>

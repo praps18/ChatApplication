@@ -34,7 +34,6 @@ def add_group(request):
     users = CustomUser.objects.all()
     return render(request, 'creategroup.html', {'users': users})
 
-#todo only a authorised users should see this 
 @login_required(login_url='/signin')
 def viewgroup(request,id):
     print("view group")
@@ -49,30 +48,23 @@ def viewgroup(request,id):
 
 @login_required(login_url="/signin")
 def viewmembers(request):
-    print("i am view mmeners")
     id = request.GET.get("group_id")
-    print(id)
     group = Group.objects.get(id=id)
     members = group.members.all()
     member_usernames = [member.username for member in members]
     return JsonResponse({"members":member_usernames})
 
-# views.py
 
 
 @csrf_protect
 @require_POST
 def delete_member(request):
     selected_members = request.POST.getlist("selected_members[]")
-    print("the selected membets" + str(selected_members))
     group_id = request.POST.get("group_id")
     group = Group.objects.get(id=group_id)
     members_to_delete = CustomUser.objects.filter(username__in=selected_members)
     group.members.remove(*members_to_delete)
-    #todo if the user selects his own name
-    print(request.user.username in selected_members)
     if(request.user.username in selected_members):
-        print("in if")
         return JsonResponse({"redirect": "userhome"})
     return JsonResponse({"message": "Selected members removed successfully"})
 
@@ -82,7 +74,6 @@ def delete_member(request):
 @login_required(login_url="/signin")
 def usersearch(request):
     search_term = request.GET.get('q', '')
-    print(search_term)
     users = CustomUser.objects.filter(username__icontains=search_term)[:10]
     user_list = [{'id': user.id, 'username': user.username} for user in users]
     return JsonResponse(user_list, safe=False)

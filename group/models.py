@@ -32,4 +32,9 @@ class Message(models.Model):
     class Meta:
         ordering=('created_date',)
 
+class Like(models.Model):
+    user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
+    message=models.ForeignKey(Message,on_delete=models.CASCADE)
+
+
 
