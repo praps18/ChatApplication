@@ -10,7 +10,6 @@ from django.contrib.auth.models import User
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        print("i am coming here")
         self.group_id = self.scope['url_route']['kwargs']['group_id']
         self.group_name = f'group_{self.group_id}'
 
